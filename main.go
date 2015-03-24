@@ -7,15 +7,16 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/pkg/browser"
 )
+
+var listen = flag.String("listen", ":8083", "Listen address")
 
 var gcvisGraph Graph
 
@@ -26,11 +27,15 @@ func indexHandler(w http.ResponseWriter, req *http.Request) {
 func main() {
 	var err error
 
-	if len(os.Args) < 2 {
-		log.Fatalf("usage: %s command <args>...", os.Args[0])
+	flag.Parse()
+
+	if flag.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "usage: [flags] %s command <args>...\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	listener, err := net.Listen("tcp4", *listen)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,10 +58,6 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 
 	go http.Serve(listener, nil)
-
-	url := fmt.Sprintf("http://%s/", listener.Addr())
-	log.Printf("opening browser window, if this fails, navigate to %s", url)
-	browser.OpenURL(url)
 
 	for {
 		select {
